@@ -1,0 +1,60 @@
+# docker-compose.yml
+# Archivo de orquestacion de contenedores para el proyecto Fintech Solutions
+# Se definen 3 servicios: nginx (servidor web), app (PHP), y db (MySQL)
+
+services:
+  # Servicio del servidor web Nginx
+  # Se encarga de recibir las peticiones HTTP y redirigirlas al contenedor de PHP
+  nginx:
+    image: nginx:1.24-alpine
+    container_name: fintech_nginx
+    ports:
+      - "8080:80"
+    volumes:
+      - ./:/var/www/html
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - app
+    networks:
+      - fintech_network
+
+  # Servicio de la aplicacion PHP (Laravel)
+  # Ejecuta el codigo PHP mediante PHP-FPM
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fintech_app
+    volumes:
+      - ./:/var/www/html
+    depends_on:
+      - db
+    networks:
+      - fintech_network
+
+  # Servicio de base de datos MySQL
+  # Almacena los datos de la aplicacion
+  db:
+    image: mysql:8.0
+    container_name: fintech_db
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: fintech
+      MYSQL_USER: fintech_user
+      MYSQL_PASSWORD: fintech_pass
+    ports:
+      - "3307:3306"
+    volumes:
+      - fintech_data:/var/lib/mysql
+    networks:
+      - fintech_network
+
+# Red interna para que los contenedores se comuniquen entre si
+networks:
+  fintech_network:
+    driver: bridge
+
+# Volumen persistente para la base de datos
+volumes:
+  fintech_data:
+    driver: local
